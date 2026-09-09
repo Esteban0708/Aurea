@@ -1,0 +1,87 @@
+<div class="catalog">
+  <section class="catalog__hero" aria-labelledby="catalog-title">
+    <div class="catalog__hero-copy">
+      <p class="eyebrow">Tu ritual, tu brillo</p>
+      <h1 id="catalog-title">Belleza que se siente <em>tuya.</em></h1>
+      <p class="catalog__intro">
+        Encuentra esos productos que hacen que tu rutina se sienta un poquito más especial.
+      </p>
+      <a class="catalog__hero-link" href="#coleccion">Explorar la colección <span>↘</span></a>
+    </div>
+    <div class="catalog__hero-art" aria-hidden="true">
+      <span class="hero-art__sun"></span>
+      <span class="hero-art__petal hero-art__petal--one"></span>
+      <span class="hero-art__petal hero-art__petal--two"></span>
+      <span class="hero-art__bottle"></span>
+      <span class="hero-art__caption">soft<br />glam</span>
+    </div>
+  </section>
+
+  <section class="catalog__collection" id="coleccion" aria-labelledby="collection-title">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">La selección Aurea</p>
+        <h2 id="collection-title">Encuentra tu próximo favorito</h2>
+      </div>
+      <span class="section-heading__count">{{ products().length }} productos</span>
+    </div>
+
+    @if (!loading() && products().length > 0) {
+      <div class="category-list" aria-label="Filtrar por categoría">
+        @for (category of categories(); track category) {
+          <button
+            type="button"
+            class="category-list__item"
+            [class.is-active]="activeCategory() === category"
+            [attr.aria-pressed]="activeCategory() === category"
+            (click)="selectCategory(category)">
+            {{ category }}
+          </button>
+        }
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="catalog__status">
+        <span class="status-dot"></span>
+        Preparando tu selección...
+      </div>
+    } @else if (filteredProducts().length === 0) {
+      <div class="catalog__empty">
+        <span class="catalog__empty-icon">✦</span>
+        <h3>Aún estamos preparando esta colección</h3>
+        <p>Vuelve pronto para descubrir nuevas piezas de belleza.</p>
+      </div>
+    } @else {
+      <div class="catalog__grid">
+        @for (product of filteredProducts(); track product.id) {
+          <article class="product-card">
+            <div class="product-card__visual">
+              @if (product.image_url) {
+                <img [src]="product.image_url" [alt]="product.name" class="product-card__img" />
+              } @else {
+                <div class="product-card__placeholder" aria-hidden="true">A</div>
+              }
+              <span class="product-card__category">{{ product.category || 'Aurea edit' }}</span>
+            </div>
+            <div class="product-card__body">
+              <div class="product-card__topline">
+                <h3>{{ product.name }}</h3>
+                <span class="product-card__price">${{ product.price }}</span>
+              </div>
+              <p class="product-card__desc">{{ product.description }}</p>
+              <button
+                type="button"
+                class="product-card__button"
+                [disabled]="product.stock === 0"
+                (click)="addToCart(product)">
+                {{ product.stock > 0 ? 'Agregar al carrito' : 'Agotado' }}
+                @if (product.stock > 0) { <span>+</span> }
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>

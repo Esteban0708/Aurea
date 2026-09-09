@@ -1,0 +1,19 @@
+<header class="navbar">
+	<a class="brand" routerLink="/" aria-label="Aurea, volver al catálogo">
+		<span class="brand__mark">A</span>
+		<span>
+			<strong>Aurea</strong>
+			<small>beauty atelier</small>
+		</span>
+	</a>
+
+	<nav class="navbar__links" aria-label="Navegación principal">
+		<a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Catálogo</a>
+		<a routerLink="/admin/login">Mi espacio</a>
+	</nav>
+
+	<a class="cart-link" routerLink="/carrito" aria-label="Abrir carrito">
+		<span>Carrito</span>
+		<span class="cart-link__count">{{ cart.count() }}</span>
+	</a>
+</header>

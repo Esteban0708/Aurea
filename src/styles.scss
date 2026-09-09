@@ -1,1 +1,28 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+	--aurea-ink: #33252b;
+	--aurea-muted: #76666d;
+	--aurea-rose: #c86f83;
+	--aurea-rose-dark: #a94e67;
+	--aurea-blush: #f8e9e8;
+	--aurea-cream: #fffaf7;
+	--aurea-line: #eadbd9;
+	--aurea-shadow: 0 18px 50px rgba(91, 48, 57, 0.1);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+	background: var(--aurea-cream);
+	color: var(--aurea-ink);
+	font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
+button,
+a {
+	font: inherit;
+}

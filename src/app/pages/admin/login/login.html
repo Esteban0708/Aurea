@@ -1,0 +1,27 @@
+<div class="login-page">
+  <div class="login-art" aria-hidden="true">
+    <span class="login-art__letter">A</span>
+    <span class="login-art__caption">beauty<br />atelier</span>
+  </div>
+  <form class="login-card" (ngSubmit)="onSubmit()">
+    <p class="eyebrow">Espacio privado</p>
+    <h1>Hola, preciosa.</h1>
+    <p class="login-card__intro">Entra para cuidar cada detalle de tu boutique.</p>
+
+    <label>
+      Correo electrónico
+      <input type="email" placeholder="tu@correo.com" [(ngModel)]="email" name="email" required autocomplete="email" />
+    </label>
+    <label>
+      Contraseña
+      <input type="password" placeholder="Tu contraseña" [(ngModel)]="password" name="password" required autocomplete="current-password" />
+    </label>
+
+    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+
+    <button type="submit" class="login-button" [disabled]="loading()">
+      {{ loading() ? 'Abriendo tu espacio...' : 'Entrar a mi espacio' }}
+      <span>↗</span>
+    </button>
+  </form>
+</div>

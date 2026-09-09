@@ -1,0 +1,61 @@
+<div class="cart-page">
+	<header class="cart-header">
+		<p class="eyebrow">Tu selección Aurea</p>
+		<h1>Tu carrito</h1>
+		<p>Revisa tus favoritos y envíanos tu pedido directamente.</p>
+	</header>
+
+	@if (cart.cartItems().length === 0) {
+		<section class="cart-empty">
+			<span>✦</span>
+			<h2>Tu carrito está esperando algo bonito.</h2>
+			<p>Explora el catálogo y agrega tus próximos favoritos.</p>
+			<a href="/">Volver al catálogo</a>
+		</section>
+	} @else {
+		<div class="cart-layout">
+			<section class="cart-items" aria-label="Productos seleccionados">
+				@for (item of cart.cartItems(); track item.product.id) {
+					<article class="cart-item">
+						@if (item.product.image_url) {
+							<img [src]="item.product.image_url" [alt]="item.product.name" />
+						} @else {
+							<div class="cart-item__placeholder">A</div>
+						}
+						<div class="cart-item__info">
+							<h2>{{ item.product.name }}</h2>
+							<p>{{ item.product.category || 'Aurea edit' }}</p>
+							<strong>${{ item.product.price }}</strong>
+						</div>
+						<div class="quantity-control" aria-label="Cantidad">
+							<button type="button" (click)="decrease(item.product.id!, item.quantity)" aria-label="Disminuir cantidad">−</button>
+							<span>{{ item.quantity }}</span>
+							<button type="button" (click)="increase(item.product.id!, item.quantity)" aria-label="Aumentar cantidad">+</button>
+						</div>
+						<button type="button" class="remove-button" (click)="cart.remove(item.product.id!)">Quitar</button>
+					</article>
+				}
+			</section>
+
+			<aside class="order-card">
+				<p class="eyebrow">Finalizar pedido</p>
+				<h2>Todo listo para ti</h2>
+				<div class="order-total"><span>Total</span><strong>${{ cart.total() }}</strong></div>
+				<label>
+					Tu nombre
+					<input [(ngModel)]="customerName" placeholder="¿Cómo te llamamos?" />
+				</label>
+				<label>
+					Nota para Aurea <span>(opcional)</span>
+					<textarea [(ngModel)]="orderNote" rows="3" placeholder="Color, horario o detalle especial"></textarea>
+				</label>
+				@if (error()) { <p class="order-error">{{ error() }}</p> }
+				<button type="button" class="whatsapp-button" (click)="sendOrder()">
+					<span>Enviar pedido por WhatsApp</span>
+					<span>↗</span>
+				</button>
+				<p class="order-footnote">Se abrirá WhatsApp con el resumen completo de tu carrito.</p>
+			</aside>
+		</div>
+	}
+</div>

@@ -1,0 +1,145 @@
+<div class="admin-page">
+	<header class="admin-header">
+		<div>
+			<p class="eyebrow">Aurea / Mi espacio</p>
+			<h1>Tu boutique, bajo control.</h1>
+			<p class="admin-header__intro">Administra lo que vendes, revisa tus existencias y mantén tu colección siempre lista.</p>
+		</div>
+		<button type="button" class="text-button" (click)="logout()">Cerrar sesión</button>
+	</header>
+
+	<section class="metrics" aria-label="Resumen del inventario">
+		<article class="metric-card">
+			<span class="metric-card__label">Productos activos</span>
+			<strong>{{ products().length }}</strong>
+			<span class="metric-card__detail">en tu colección</span>
+		</article>
+		<article class="metric-card metric-card--rose">
+			<span class="metric-card__label">Valor en inventario</span>
+			<strong>${{ inventoryValue() | number:'1.0-0' }}</strong>
+			<span class="metric-card__detail">precio x existencias</span>
+		</article>
+		<article class="metric-card" [class.metric-card--alert]="lowStockProducts().length > 0">
+			<span class="metric-card__label">Stock por revisar</span>
+			<strong>{{ lowStockProducts().length }}</strong>
+			<span class="metric-card__detail">productos con 5 o menos</span>
+		</article>
+	</section>
+
+	<div class="admin-layout">
+		<section class="admin-panel admin-panel--form">
+			<div class="panel-heading">
+				<div>
+					<p class="eyebrow">Catálogo</p>
+					<h2>{{ editingId() ? 'Editar producto' : 'Nuevo producto' }}</h2>
+				</div>
+				@if (editingId()) {
+					<button type="button" class="text-button" (click)="cancelEdit()">Cancelar</button>
+				}
+			</div>
+
+			<form class="product-form" (ngSubmit)="onSubmit()">
+				<label>
+					Nombre del producto
+					<input [(ngModel)]="form.name" name="name" placeholder="Ej. Rubor rosa dulce" required />
+				</label>
+				<label>
+					Descripción
+					<textarea [(ngModel)]="form.description" name="description" rows="3" placeholder="Una breve descripción"></textarea>
+				</label>
+				<div class="form-row">
+					<label>
+						Precio
+						<input [(ngModel)]="form.price" name="price" type="number" min="0" required />
+					</label>
+					<label>
+						Existencias
+						<input [(ngModel)]="form.stock" name="stock" type="number" min="0" required />
+					</label>
+				</div>
+				<label>
+					Categoría
+					<select [(ngModel)]="form.category" name="category" required>
+						<option value="" disabled>Selecciona una categoría</option>
+						@for (category of categoryOptions(); track category) {
+							<option [value]="category">{{ category }}</option>
+						}
+					</select>
+				</label>
+				<label class="file-field">
+					Imagen del producto
+					<input type="file" accept="image/*" (change)="onFileSelected($event)" />
+					<span>{{ selectedFile?.name || 'Elige una imagen desde tu equipo' }}</span>
+				</label>
+				<button type="submit" class="primary-button" [disabled]="saving()">
+					{{ saving() ? 'Guardando...' : (editingId() ? 'Guardar cambios' : 'Añadir producto') }}
+				</button>
+			</form>
+		</section>
+
+		<section class="admin-panel category-panel">
+			<div class="panel-heading">
+				<div>
+					<p class="eyebrow">Organización</p>
+					<h2>Categorías</h2>
+				</div>
+				<span class="panel-count">{{ categoryOptions().length }}</span>
+			</div>
+			<form class="category-form" (ngSubmit)="createCategory()">
+				<input [(ngModel)]="newCategory" name="newCategory" placeholder="Nueva categoría" aria-label="Nombre de la nueva categoría" />
+				<button type="submit" class="icon-button" [disabled]="categorySaving() || !newCategory.trim()" aria-label="Crear categoría">+</button>
+			</form>
+			@if (categoryError()) {
+				<p class="form-note form-note--error">{{ categoryError() }}</p>
+			}
+			<div class="category-chips">
+				@for (category of categoryOptions(); track category) {
+					<span>{{ category }}</span>
+				} @empty {
+					<p class="form-note">Añade tu primera categoría.</p>
+				}
+			</div>
+		</section>
+	</div>
+
+	<section class="inventory-section">
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Vista general</p>
+				<h2>Inventario</h2>
+			</div>
+			<span class="section-heading__count">{{ products().length }} referencias</span>
+		</div>
+
+		@if (loading()) {
+			<p class="admin-empty">Cargando inventario...</p>
+		} @else if (products().length === 0) {
+			<p class="admin-empty">Todavía no tienes productos. Añade el primero desde el formulario.</p>
+		} @else {
+			<div class="inventory-table-wrap">
+				<table class="inventory-table">
+					<thead>
+						<tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th></tr>
+					</thead>
+					<tbody>
+						@for (product of products(); track product.id) {
+							<tr>
+								<td class="inventory-product">
+									@if (product.image_url) { <img [src]="product.image_url" [alt]="product.name" /> }
+									<span>{{ product.name }}</span>
+								</td>
+								<td><span class="table-tag">{{ product.category || 'Sin categoría' }}</span></td>
+								<td>${{ product.price }}</td>
+								<td><span class="stock-value" [class.stock-value--low]="product.stock <= 5">{{ product.stock }}</span></td>
+								<td class="table-actions">
+									<button type="button" class="table-button" (click)="editProduct(product)">Editar</button>
+									<button type="button" class="table-button table-button--danger" (click)="deleteProduct(product.id!)">Eliminar</button>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</section>
+</div>
