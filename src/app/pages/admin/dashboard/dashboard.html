@@ -26,6 +26,33 @@
 		</article>
 	</section>
 
+	<section class="sales-summary" aria-label="Resumen de ventas">
+		<div class="sales-summary__heading">
+			<div>
+				<p class="eyebrow">Dinero recibido</p>
+				<h2>Resumen de ventas</h2>
+			</div>
+			<span class="sales-summary__note">Solo pedidos confirmados</span>
+		</div>
+		<div class="sales-summary__cards">
+			<article class="sales-card sales-card--main">
+				<span class="sales-card__label">Ventas confirmadas</span>
+				<strong>${{ confirmedSalesValue() | number:'1.0-0' }}</strong>
+				<span class="sales-card__detail">valor total vendido</span>
+			</article>
+			<article class="sales-card">
+				<span class="sales-card__label">Pedidos finalizados</span>
+				<strong>{{ confirmedOrders().length }}</strong>
+				<span class="sales-card__detail">ventas confirmadas</span>
+			</article>
+			<article class="sales-card sales-card--pending">
+				<span class="sales-card__label">Pendiente por confirmar</span>
+				<strong>${{ pendingSalesValue() | number:'1.0-0' }}</strong>
+				<span class="sales-card__detail">{{ pendingOrders().length }} pedidos pendientes</span>
+			</article>
+		</div>
+	</section>
+
 	<div class="admin-layout">
 		<section class="admin-panel admin-panel--form">
 			<div class="panel-heading">
@@ -101,6 +128,91 @@
 			</div>
 		</section>
 	</div>
+
+	<section class="admin-panel import-panel">
+		<div class="panel-heading">
+			<div>
+				<p class="eyebrow">Carga rápida</p>
+				<h2>Importar desde Excel</h2>
+				<p class="panel-description">Carga muchos productos de una vez usando las columnas: <strong>name, description, price, stock, category, image_url</strong>.</p>
+			</div>
+		</div>
+		<div class="import-actions">
+			<label class="excel-picker">
+				<span>Elegir archivo Excel</span>
+				<input type="file" accept=".xlsx,.xls" (change)="onExcelSelected($event)" />
+			</label>
+			@if (importFileName()) { <span class="selected-file">{{ importFileName() }}</span> }
+			<button type="button" class="text-button" (click)="clearImport()" [disabled]="!importFileName()">Limpiar</button>
+		</div>
+		@if (importErrors().length) {
+			<div class="import-errors" role="alert">
+				<strong>Revisa estas filas antes de cargar:</strong>
+				@for (error of importErrors(); track error) { <span>{{ error }}</span> }
+			</div>
+		}
+		@if (importMessage()) { <p class="import-message">{{ importMessage() }}</p> }
+		@if (importRows().length) {
+			<div class="import-preview">
+				<div class="preview-heading"><strong>Vista previa</strong><span>{{ importRows().length }} filas listas</span></div>
+				<div class="preview-table-wrap">
+					<table class="preview-table">
+						<thead><tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Categoría</th></tr></thead>
+						<tbody>
+							@for (row of importRows().slice(0, 8); track $index) {
+								<tr><td>{{ row.name }}</td><td>${{ row.price }}</td><td>{{ row.stock }}</td><td>{{ row.category || 'Sin categoría' }}</td></tr>
+							}
+						</tbody>
+					</table>
+				</div>
+				<button type="button" class="primary-button" [disabled]="importing()" (click)="importProducts()">
+					{{ importing() ? 'Cargando inventario...' : 'Confirmar carga al inventario' }}
+				</button>
+			</div>
+		}
+	</section>
+
+	<section class="inventory-section">
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Ventas</p>
+				<h2>Pedidos recibidos</h2>
+			</div>
+			<span class="section-heading__count">{{ orders().length }} pedidos</span>
+		</div>
+		@if (orderError()) { <p class="form-note form-note--error">{{ orderError() }}</p> }
+		@if (ordersLoading()) {
+			<p class="admin-empty">Cargando pedidos...</p>
+		} @else if (orders().length === 0) {
+			<p class="admin-empty">Todavía no has recibido pedidos.</p>
+		} @else {
+			<div class="orders-list">
+				@for (order of orders(); track order.id) {
+					<article class="order-row">
+						<div class="order-row__main">
+							<div class="order-row__reference">#{{ order.id.slice(0, 8).toUpperCase() }}</div>
+							<h3>{{ order.customer_name }}</h3>
+							<p>{{ order.items?.length || 0 }} productos · {{ order.created_at | date:'dd/MM/yyyy, HH:mm' }}</p>
+							@if (order.customer_note) { <small>Nota: {{ order.customer_note }}</small> }
+						</div>
+						<div class="order-row__items">
+							@for (item of order.items || []; track item.id) { <span>{{ item.quantity }}x {{ item.product_name }}</span> }
+						</div>
+						<div class="order-row__side">
+							<strong>${{ order.total }}</strong>
+							<span class="order-status" [class]="'order-status--' + order.status">{{ order.status === 'pending' ? 'Pendiente' : (order.status === 'confirmed' ? 'Confirmado' : 'Cancelado') }}</span>
+							@if (order.status === 'pending') {
+								<div class="order-actions">
+									<button type="button" class="table-button" (click)="updateOrderStatus(order, 'confirmed')">Confirmar</button>
+									<button type="button" class="table-button table-button--danger" (click)="updateOrderStatus(order, 'cancelled')">Cancelar</button>
+								</div>
+							}
+						</div>
+					</article>
+				}
+			</div>
+		}
+	</section>
 
 	<section class="inventory-section">
 		<div class="section-heading">

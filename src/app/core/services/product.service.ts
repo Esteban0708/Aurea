@@ -18,6 +18,11 @@ export class ProductService {
     if (error) throw error;
   }
 
+  async addProducts(products: Omit<Product, 'id' | 'created_at'>[]) {
+    const { error } = await this.supabase.from('products').insert(products);
+    if (error) throw error;
+  }
+
   async updateProduct(id: string, product: Partial<Product>) {
     const { error } = await this.supabase.from('products').update(product).eq('id', id);
     if (error) throw error;

@@ -8,6 +8,18 @@ import { StorageService } from '../../../core/services/storage';
 import { AuthService } from '../../../core/services/auth';
 import { Product } from '../../../core/models/product.model';
 import { Category } from '../../../core/models/category.model';
+import { Order, OrderStatus } from '../../../core/models/order.model';
+import { OrderService } from '../../../core/services/order.service';
+import * as XLSX from 'xlsx';
+
+interface ImportRow {
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  category: string;
+  image_url: string;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -19,6 +31,7 @@ import { Category } from '../../../core/models/category.model';
 export class Dashboard implements OnInit {
   private productService = inject(ProductService);
   private categoryService = inject(CategoryService);
+  private orderService = inject(OrderService);
   private storageService = inject(StorageService);
   private auth = inject(AuthService);
   private router = inject(Router);
@@ -35,6 +48,14 @@ export class Dashboard implements OnInit {
   editingId = signal<string | null>(null);
   form: Partial<Product> = this.emptyForm();
   selectedFile: File | null = null;
+  importRows = signal<ImportRow[]>([]);
+  importErrors = signal<string[]>([]);
+  importFileName = signal('');
+  importing = signal(false);
+  importMessage = signal('');
+  orders = signal<Order[]>([]);
+  ordersLoading = signal(true);
+  orderError = signal('');
 
   categoryOptions = computed(() => {
     const storedCategories = this.categories().map(category => category.name);
@@ -48,9 +69,46 @@ export class Dashboard implements OnInit {
     this.products().reduce((total, product) => total + product.price * product.stock, 0)
   );
 
+  confirmedOrders = computed(() => this.orders().filter(order => order.status === 'confirmed'));
+
+  pendingOrders = computed(() => this.orders().filter(order => order.status === 'pending'));
+
+  confirmedSalesValue = computed(() =>
+    this.confirmedOrders().reduce((total, order) => total + Number(order.total), 0)
+  );
+
+  pendingSalesValue = computed(() =>
+    this.pendingOrders().reduce((total, order) => total + Number(order.total), 0)
+  );
+
   async ngOnInit() {
     await this.loadProducts();
     await this.loadCategories();
+    await this.loadOrders();
+  }
+
+  async loadOrders() {
+    this.ordersLoading.set(true);
+    try {
+      this.orders.set(await this.orderService.getOrders());
+    } catch (error) {
+      this.orderError.set('No se pudieron cargar los pedidos. Ejecuta la actualización de schema.sql.');
+      console.error(error);
+    } finally {
+      this.ordersLoading.set(false);
+    }
+  }
+
+  async updateOrderStatus(order: Order, status: OrderStatus) {
+    try {
+      await this.orderService.updateStatus(order.id, status);
+      await Promise.all([this.loadOrders(), this.loadProducts()]);
+    } catch (error) {
+      this.orderError.set(status === 'confirmed'
+        ? 'No se pudo confirmar: revisa que haya stock suficiente.'
+        : 'No se pudo actualizar el pedido.');
+      console.error(error);
+    }
   }
 
   async loadCategories() {
@@ -96,6 +154,87 @@ export class Dashboard implements OnInit {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     this.selectedFile = input.files?.[0] ?? null;
+  }
+
+  async onExcelSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.importFileName.set(file.name);
+    this.importRows.set([]);
+    this.importErrors.set([]);
+    this.importMessage.set('');
+
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: '' });
+      const validRows: ImportRow[] = [];
+      const errors: string[] = [];
+
+      rows.forEach((row, index) => {
+        const line = index + 2;
+        const normalized = Object.fromEntries(
+          Object.entries(row).map(([key, value]) => [this.normalizeHeader(key), value])
+        );
+        const name = String(normalized['name'] || '').trim();
+        const price = Number(normalized['price']);
+        const stock = Number(normalized['stock']);
+
+        if (!name) errors.push(`Fila ${line}: falta el nombre.`);
+        if (!Number.isFinite(price) || price < 0) errors.push(`Fila ${line}: el precio no es válido.`);
+        if (!Number.isInteger(stock) || stock < 0) errors.push(`Fila ${line}: el stock debe ser un entero positivo.`);
+
+        if (name && Number.isFinite(price) && price >= 0 && Number.isInteger(stock) && stock >= 0) {
+          validRows.push({
+            name,
+            description: String(normalized['description'] || ''),
+            price,
+            stock,
+            category: String(normalized['category'] || ''),
+            image_url: String(normalized['image_url'] || '')
+          });
+        }
+      });
+
+      if (!rows.length) errors.push('El Excel no contiene filas de productos.');
+      this.importRows.set(validRows);
+      this.importErrors.set(errors);
+    } catch (error) {
+      this.importErrors.set(['No se pudo leer el archivo. Usa un Excel .xlsx o .xls válido.']);
+      console.error(error);
+    }
+  }
+
+  normalizeHeader(header: string) {
+    return header.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replaceAll(' ', '_');
+  }
+
+  clearImport() {
+    this.importRows.set([]);
+    this.importErrors.set([]);
+    this.importFileName.set('');
+    this.importMessage.set('');
+  }
+
+  async importProducts() {
+    if (!this.importRows().length) return;
+
+    this.importing.set(true);
+    this.importMessage.set('');
+    try {
+      await this.productService.addProducts(this.importRows());
+      const importedCount = this.importRows().length;
+      this.clearImport();
+      this.importMessage.set(`${importedCount} productos se cargaron correctamente.`);
+      await this.loadProducts();
+    } catch (error) {
+      this.importMessage.set('No se pudo cargar el inventario. Revisa los permisos de Supabase.');
+      console.error(error);
+    } finally {
+      this.importing.set(false);
+    }
   }
 
   editProduct(product: Product) {

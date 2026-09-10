@@ -50,8 +50,8 @@
 					<textarea [(ngModel)]="orderNote" rows="3" placeholder="Color, horario o detalle especial"></textarea>
 				</label>
 				@if (error()) { <p class="order-error">{{ error() }}</p> }
-				<button type="button" class="whatsapp-button" (click)="sendOrder()">
-					<span>Enviar pedido por WhatsApp</span>
+				<button type="button" class="whatsapp-button" [disabled]="sending()" (click)="sendOrder()">
+					<span>{{ sending() ? 'Registrando pedido...' : 'Enviar pedido por WhatsApp' }}</span>
 					<span>↗</span>
 				</button>
 				<p class="order-footnote">Se abrirá WhatsApp con el resumen completo de tu carrito.</p>

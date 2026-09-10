@@ -62,11 +62,25 @@
               } @else {
                 <div class="product-card__placeholder" aria-hidden="true">A</div>
               }
+              <div class="product-card__overlay" aria-hidden="true">
+                <span>Ver detalle</span>
+                <span>↗</span>
+              </div>
               <span class="product-card__category">{{ product.category || 'Aurea edit' }}</span>
+              @if (product.stock === 0) {
+                <span class="product-card__availability product-card__availability--empty">Agotado</span>
+              } @else if (product.stock <= 5) {
+                <span class="product-card__availability">Últimas unidades</span>
+              } @else {
+                <span class="product-card__availability">Disponible</span>
+              }
             </div>
             <div class="product-card__body">
               <div class="product-card__topline">
-                <h3>{{ product.name }}</h3>
+                <div>
+                  <p class="product-card__eyebrow">Aurea beauty edit</p>
+                  <h3>{{ product.name }}</h3>
+                </div>
                 <span class="product-card__price">${{ product.price }}</span>
               </div>
               <p class="product-card__desc">{{ product.description }}</p>
@@ -75,8 +89,8 @@
                 class="product-card__button"
                 [disabled]="product.stock === 0"
                 (click)="addToCart(product)">
-                {{ product.stock > 0 ? 'Agregar al carrito' : 'Agotado' }}
-                @if (product.stock > 0) { <span>+</span> }
+                <span>{{ product.stock > 0 ? 'Agregar a mi colección' : 'Producto agotado' }}</span>
+                @if (product.stock > 0) { <span class="product-card__button-icon">+</span> }
               </button>
             </div>
           </article>
